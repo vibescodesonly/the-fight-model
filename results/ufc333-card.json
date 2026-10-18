@@ -1,0 +1,120 @@
+{
+  "event": "UFC 333",
+  "source": "User-provided fight card",
+  "bouts": [
+    {
+      "weight_class": "Featherweight",
+      "fighters": [
+        "Alexander Volkanovski",
+        "Movsar Evloev"
+      ],
+      "rounds": 5,
+      "is_title": true,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Bantamweight",
+      "fighters": [
+        "Petr Yan",
+        "Merab Dvalishvili"
+      ],
+      "rounds": 5,
+      "is_title": true,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Flyweight",
+      "fighters": [
+        "Lone'er Kavanagh",
+        "Ramazan Temirov"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Heavyweight",
+      "fighters": [
+        "Alexander Volkov",
+        "Rizvan Kuniev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Featherweight",
+      "fighters": [
+        "Aaron Pico",
+        "Losene Keita"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Light Heavyweight",
+      "fighters": [
+        "Azamat Murzakanov",
+        "Dominick Reyes"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Light Heavyweight",
+      "fighters": [
+        "Nikita Krylov",
+        "Abdul Rakhman Yakhyaev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Middleweight",
+      "fighters": [
+        "Abus Magomedov",
+        "Cam Rowston"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Lightweight",
+      "fighters": [
+        "Grant Dawson",
+        "Nurullo Aliev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Middleweight",
+      "fighters": [
+        "Abubakar Vagaev",
+        "Jacob Malkoun"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men"
+    },
+    {
+      "weight_class": "Bantamweight",
+      "fighters": [
+        "Colby Thicknesse",
+        "Asaf Chopurov"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "allow_debutant_prior": true
+    }
+  ],
+  "location": "Abu Dhabi, Abu Dhabi, United Arab Emirates",
+  "event_source_url": "http://ufcstats.com/event-details/cc18abc046b382c9",
+  "event_date": "2026-10-24"
+}

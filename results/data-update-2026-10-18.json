@@ -1,0 +1,205 @@
+{
+  "as_of": "2026-10-18",
+  "original_sha256": "56097234970ed7811249ee54a640553c85da223a2a335b1f4a55f83e9959611b",
+  "original_rows": 9197,
+  "added_rows": 192,
+  "updated_rows": 9389,
+  "source": "http://ufcstats.com",
+  "events": [
+    {
+      "name": "UFC 329: McGregor vs. Holloway 2",
+      "url": "http://ufcstats.com/event-details/fccb0fee256b7b4d",
+      "date": "7/11/2026",
+      "location": "Las Vegas, Nevada, USA",
+      "fights": 14
+    },
+    {
+      "name": "UFC Fight Night: Du Plessis vs. Usman",
+      "url": "http://ufcstats.com/event-details/f354c50b8d63d9b3",
+      "date": "7/18/2026",
+      "location": "Oklahoma City, Oklahoma, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC Fight Night: Ankalaev vs. Guskov",
+      "url": "http://ufcstats.com/event-details/681d07e328798ec0",
+      "date": "7/25/2026",
+      "location": "Abu Dhabi, Abu Dhabi, United Arab Emirates",
+      "fights": 12
+    },
+    {
+      "name": "UFC Fight Night: Medic vs. Rodriguez",
+      "url": "http://ufcstats.com/event-details/1a50e734bb54861a",
+      "date": "8/1/2026",
+      "location": "Belgrade, Vojvodina, Serbia",
+      "fights": 14
+    },
+    {
+      "name": "UFC Fight Night: Gamrot vs. Salkilld",
+      "url": "http://ufcstats.com/event-details/495add4fbede0a44",
+      "date": "8/8/2026",
+      "location": "Las Vegas, Nevada, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC 330: Makhachev vs. Machado Garry",
+      "url": "http://ufcstats.com/event-details/b96619b3acd7d9da",
+      "date": "8/15/2026",
+      "location": "Philadelphia, Pennsylvania, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC Fight Night: Hernandez vs. Rodrigues",
+      "url": "http://ufcstats.com/event-details/a0a69dc9914ef6e1",
+      "date": "8/22/2026",
+      "location": "Sacramento, California, USA",
+      "fights": 13
+    },
+    {
+      "name": "UFC Fight Night: Nurmagomedov vs. Song",
+      "url": "http://ufcstats.com/event-details/9d61d8cb1c354867",
+      "date": "8/29/2026",
+      "location": "Shanghai, China",
+      "fights": 13
+    },
+    {
+      "name": "UFC Fight Night: Hooker vs. Parnasse",
+      "url": "http://ufcstats.com/event-details/2144954270be834d",
+      "date": "9/5/2026",
+      "location": "Paris, Ile-de-France, France",
+      "fights": 14
+    },
+    {
+      "name": "Noche UFC: Silva vs. Delgado",
+      "url": "http://ufcstats.com/event-details/638cfec7ec559d6e",
+      "date": "9/12/2026",
+      "location": "Glendale, Arizona, USA",
+      "fights": 13
+    },
+    {
+      "name": "UFC 331: Van vs. Pantoja 2",
+      "url": "http://ufcstats.com/event-details/8a0a35e7c74bebcc",
+      "date": "9/19/2026",
+      "location": "Los Angeles, California, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC Fight Night: Rosas Jr. vs. Barcelos",
+      "url": "http://ufcstats.com/event-details/7e654edcddd71550",
+      "date": "9/26/2026",
+      "location": "Las Vegas, Nevada, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC 332: Silva vs. Wang",
+      "url": "http://ufcstats.com/event-details/ad3fdba28a7540cf",
+      "date": "10/3/2026",
+      "location": "Salt Lake City, Utah, USA",
+      "fights": 14
+    },
+    {
+      "name": "UFC Fight Night: Allen vs. Duncan",
+      "url": "http://ufcstats.com/event-details/7f98d9d5a10fa25c",
+      "date": "10/10/2026",
+      "location": "Las Vegas, Nevada, USA",
+      "fights": 12
+    },
+    {
+      "name": "UFC Fight Night: Buckley vs. Malott",
+      "url": "http://ufcstats.com/event-details/55e94a9b525dcf45",
+      "date": "10/17/2026",
+      "location": "Edmonton, Alberta, Canada",
+      "fights": 13
+    }
+  ],
+  "unknown_new_camp_rows": 192,
+  "unknown_new_event_altitude_rows": 27,
+  "profiles_fetched": 366,
+  "validation": {
+    "original_records_byte_preserved": true,
+    "schema_columns": 320,
+    "new_rows_checked": 192,
+    "round_total_disagreements": [],
+    "sha256": "79cbca8c3f429f108f25360b30e664fce125d79cd76b4856b157a29d06d29bf1",
+    "new_dates_min": "2026-07-11",
+    "new_dates_max": "2026-10-17",
+    "round_strike_decomposition_checks": 3272,
+    "round_strike_decomposition_disagreements": [],
+    "weight_classes_match_historical_schema": true
+  },
+  "weight_class_normalization": [
+    {
+      "fight_url": "http://ufcstats.com/fight-details/52ddf20a10890b41",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/878a7e6fec3e4573",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/13f31f7a784013a3",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/ded584e13276cbcb",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/4700d42c9869674a",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/97fb716bc7b8751a",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/73cb6c4e060c4ee9",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/6206c62fc8f0b71b",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/9226a13d001b49ec",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/3a70ed81e5611d24",
+      "from": "Ultimate Fighter 34 Bantamweight Tournament",
+      "to": "Bantamweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/7bff1b7a45666e98",
+      "from": "Ultimate Fighter 34 Strawweight Tournament",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/f34e58d365bb37b1",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    },
+    {
+      "fight_url": "http://ufcstats.com/fight-details/4f0f783503d5b5c4",
+      "from": "Strawweight",
+      "to": "Women's Strawweight"
+    }
+  ],
+  "dataset_path": "pure_fight_data_with_event_and_camp_altitudes.csv",
+  "original_git_commit": "ca597d04edf5974d14ab6e594ae61164c9017f61",
+  "feature_validation": {
+    "training_rows": 9322,
+    "features": 443,
+    "labels_aligned": true,
+    "infinite_features": false
+  }
+}

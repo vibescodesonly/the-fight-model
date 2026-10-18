@@ -7,9 +7,23 @@ evaluated on strictly chronological data with no information leakage.
 The full implementation is a single, self-contained script:
 [`UFC_ML_Model.py`](UFC_ML_Model.py).
 
-## Headline results
+## Current dataset and UFC 333 forecasts
 
-From the most recent full run (dataset through July 2026; 9,197 fights, of
+The October 18, 2026 update contains **9,389 completed fights through October
+17, 2026**. It adds 192 fights from 15 UFC events while preserving all 9,197
+original records and the 320-column schema. Source events, checksums, missing
+elevation coverage, and validation are recorded in
+[`results/data-update-2026-10-18.json`](results/data-update-2026-10-18.json).
+
+The retrained model's predictions for all 11 requested UFC 333 bouts are saved
+in [this table](results/ufc333-predictions-2026-10-18.md), with full probabilities
+in [JSON](results/ufc333-predictions-2026-10-18.json) and the
+[card inputs](results/ufc333-card.json). These are forecasts generated on
+October 18, before the scheduled October 24 event.
+
+## Original published benchmark
+
+From the original published run (dataset through June 27, 2026; 9,197 fights, of
 which 7,873 rows from the selected 2010+ training era):
 
 | Metric (500 most-recent-fight holdout) | Value |
@@ -26,7 +40,9 @@ gradient-boosted model per fold) show accuracy improving monotonically toward
 the present — 59.5% on the earliest fold to 67.2% on the most recent —
 confirming that skill is not an artifact of one lucky holdout window.
 
-These numbers are reproduced by `python UFC_ML_Model.py --train-only` (see
+These numbers use the original dataset at commit
+[`ca597d0`](https://github.com/vibescodesonly/the-fight-model/tree/ca597d04edf5974d14ab6e594ae61164c9017f61).
+Training on the updated dataset evaluates a later holdout window (see
 [Reproducing results](#reproducing-results)).
 
 ## How it works
@@ -117,7 +133,7 @@ retraining noise cannot silently degrade the deployed blend.
 | `UFC_ML_Model.py` | The complete model: features, ratings, training, evaluation, GUI. |
 | `pure_fight_data_with_event_and_camp_altitudes.csv` | Fight dataset (see [Data](#data)). |
 | `Stat Definitions.txt` | Data dictionary: a definition for every dataset column. |
-| `results/` | Audit artifacts and a sample prediction export from the published run. |
+| `results/` | Original benchmark artifacts, dated data-update audit, and UFC 333 forecasts. |
 | `requirements.txt` | Pinned Python dependencies. |
 | `CITATION.cff` | Citation metadata. |
 | `.ufc_model_cache/` | Generated: cached training stages (safe to delete; forces retrain). |
@@ -135,7 +151,7 @@ them.
 
 ## Data
 
-One row per fight (~9,200 UFC fights, 1993–present), with:
+One row per fight (9,389 UFC fights, 1993–October 17, 2026), with:
 
 - event metadata: date, location, venue elevation, weight class, gender,
   title-bout flag, scheduled rounds;
@@ -151,9 +167,16 @@ Every column is defined in [`Stat Definitions.txt`](Stat%20Definitions.txt).
 
 Statistics were collected from [ufcstats.com](http://ufcstats.com) (the UFC's
 official statistics provider) and enriched with venue and training-camp
-elevations via geocoding. The CSV in this repository is the exact file the
-published results were computed from; its SHA-256 participates in the cache
-keys, so any modification forces a retrain.
+elevations via geocoding. The current CSV includes the October 18 update;
+the original benchmark dataset is available at the commit linked above.
+The CSV's SHA-256 participates in the cache keys, so modifying it invalidates
+the corresponding cached training stages.
+
+For the 192 added rows, unverified training-camp elevations remain blank;
+27 rows also lack a verified venue elevation. The model uses its existing
+fallbacks for missing elevation data. Weight-class labels follow the original
+dataset's conventions. The updated CSV SHA-256 is
+`79cbca8c3f429f108f25360b30e664fce125d79cd76b4856b157a29d06d29bf1`.
 
 ## Reproducing results
 
@@ -161,6 +184,12 @@ keys, so any modification forces a retrain.
 pip install -r requirements.txt
 python UFC_ML_Model.py --train-only
 ```
+
+This trains and evaluates the current dataset. To reproduce the original
+published benchmark, use the original commit linked above with its dataset.
+The roughly 1 GB serialized production model is retained in the cloud
+environment; generated model binaries and training caches are excluded from
+GitHub. A fresh checkout rebuilds trained models using the command above.
 
 The script prints a structured report: split contract, feature pruning,
 Optuna tuning, combiner selection, calibration, holdout evaluation, method
@@ -214,9 +243,10 @@ sizes), `OPTUNA_TRIALS`, `METHOD_TUNING_TRIALS`, and `STRICT_KEEP_MODELS`
 
 ## Reproducibility statement
 
-All results in the accompanying paper were produced by this repository at the
-pinned dependency versions in `requirements.txt`, from the included dataset,
-with all random seeds fixed. Code was developed by the author with assistance
+All results in the accompanying paper were produced at the pinned dependency
+versions in `requirements.txt`, from the original 9,197-fight dataset at commit
+`ca597d0`, with all random seeds fixed. The dated update and forecast artifacts
+identify the current dataset separately. Code was developed by the author with assistance
 from Anthropic's Claude (AI pair programming); all modeling decisions were
 validated empirically through the ablations and audits described above.
 

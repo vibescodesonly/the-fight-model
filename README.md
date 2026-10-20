@@ -149,16 +149,19 @@ calibration selection retained identity. Read the
 [machine-readable evaluation](results/causal-model-evaluation.json).
 
 The [version manifest](results/model-v2-manifest.json) records model, source,
-dataset, package and artifact checksums. The 221 MB trained checkpoint is
-distributed as an asset of the **v2.0.0-causal.1** research prerelease on
-[GitHub Releases](https://github.com/vibescodesonly/the-fight-model/releases),
-rather than as a Git blob. The release starts as a draft visible to repository
-maintainers until published. Download `causal-production.pkl`,
-`causal-production.meta.json` and `causal-production.evaluation.json` into
-`.ufc_model_cache/` of this version's checkout, install its pinned requirements,
-and run:
+dataset, package and artifact checksums. The complete 221 MB trained checkpoint
+is preserved losslessly as [models/causal-production.pkl.xz](models/causal-production.pkl.xz)
+(58 MB compressed), with [metadata](models/causal-production.meta.json).
+Decompression was checked against the original checkpoint SHA-256. The
+**v2.0.0-causal.1** research release starts as a draft visible to repository
+maintainers until published. Its checkpoint is included directly in the Git
+snapshot; it does not require access to release assets. Install this version's
+pinned requirements, restore the checkpoint, and run:
 
 ```bash
+mkdir -p .ufc_model_cache
+xz --decompress --stdout models/causal-production.pkl.xz > .ufc_model_cache/causal-production.pkl
+cp models/causal-production.meta.json .ufc_model_cache/
 python scripts/research.py predict results/ufc333-card.json /tmp/ufc333-causal.json \
   --model .ufc_model_cache/causal-production.pkl \
   --data pure_fight_data_with_event_and_camp_altitudes.csv \

@@ -24,11 +24,6 @@
     },
     "model_sha256": "4f7a7311281f4e7be50ecffe6f593971704c759e48bb0d3d40550e24aa223fce"
   },
-  "assets": [
-    "causal-production.pkl",
-    "causal-production.meta.json",
-    "causal-production.evaluation.json"
-  ],
   "card": "results/ufc333-card.json",
   "forecasts": "results/ufc333-causal-2026-10-19.json",
   "evaluation": "results/causal-model-evaluation.json",
@@ -37,5 +32,13 @@
     "Production calibration selection retained identity.",
     "No historical bookmaker odds supplied; no fitted market blend or ROI claim.",
     "Checkpoints are Python pickle files; only load trusted release artifacts."
-  ]
+  ],
+  "checkpoint": {
+    "path": "models/causal-production.pkl.xz",
+    "compression": "xz",
+    "compressed_bytes": 60480696,
+    "compressed_sha256": "5fb133333c033d8d7502a4412a728746034f7121e60446af0b104db56ec42334",
+    "uncompressed_sha256": "4f7a7311281f4e7be50ecffe6f593971704c759e48bb0d3d40550e24aa223fce",
+    "metadata": "models/causal-production.meta.json"
+  }
 }

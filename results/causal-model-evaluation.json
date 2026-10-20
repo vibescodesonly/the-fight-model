@@ -1,0 +1,401 @@
+{
+  "version": "causal-research-v1",
+  "config": {
+    "start_year": 2010,
+    "validation_fights": 600,
+    "test_fights": 500,
+    "walk_forward_folds": 3,
+    "minimum_training_fights": 1000,
+    "tree_limit": null,
+    "outcome_iterations": 300,
+    "duration_iterations": 240,
+    "count_iterations": 220
+  },
+  "source_sha256": "0d700156e0f335a9e6d7e2095c88612ca7bffab49c9aa457c9dd032e4370d3eb",
+  "runtime": {
+    "packages": {
+      "numpy": "2.3.2",
+      "pandas": "2.3.2",
+      "scikit-learn": "1.7.1",
+      "scipy": "1.16.1",
+      "lightgbm": "4.6.0",
+      "xgboost": "3.0.5",
+      "catboost": "1.2.8"
+    },
+    "flags": {
+      "MOV_RATINGS_ENABLED": true,
+      "MOV_MODE": "full",
+      "PHASE_RATINGS_ENABLED": true,
+      "OBA_FEATURES_ENABLED": true,
+      "CORNER_CORRECTION_ENABLED": false,
+      "WINNER_SEES_ALL_FEATURES": false,
+      "WINNER_COMBINER_ROBUST": true
+    }
+  },
+  "dataset_sha256": "79cbca8c3f429f108f25360b30e664fce125d79cd76b4856b157a29d06d29bf1",
+  "data_cutoff": "2026-10-17",
+  "outcome_population": "Decisive Decision/KO-TKO/Submission outcomes, scheduled 3 or 5 rounds; draws/NC/DQ not priced.",
+  "evaluation_status": "Retrospective diagnostics on previously inspected history; prospective confirmation is required.",
+  "feature_contract": "All events on a date share frozen pre-date state; appending later events cannot change earlier features.",
+  "folds": [
+    {
+      "rows": 507,
+      "accuracy": 0.6489151873767258,
+      "log_loss": 0.6309730136934861,
+      "brier": 0.22006800513009553,
+      "ece": 0.04315345723760571,
+      "uncalibrated": {
+        "rows": 507,
+        "accuracy": 0.6489151873767258,
+        "log_loss": 0.6309730136934861,
+        "brier": 0.22006800513009553,
+        "ece": 0.04315345723760571
+      },
+      "elo_baseline": {
+        "rows": 507,
+        "accuracy": 0.5424063116370809,
+        "log_loss": 0.6874340412179336,
+        "brier": 0.2471602047011938,
+        "ece": 0.05314958112671629
+      },
+      "joint_log_loss": 1.5627184600912933,
+      "joint_accuracy": 0.38461538461538464,
+      "joint_brier": 0.753004118735634,
+      "direct_joint_challenger": {
+        "joint_log_loss": 1.5657057894820823,
+        "joint_accuracy": 0.3668639053254438,
+        "winner": {
+          "rows": 507,
+          "accuracy": 0.6489151873767258,
+          "log_loss": 0.6408158966727858,
+          "brier": 0.22473793396025266,
+          "ece": 0.06699084367771783
+        },
+        "deployment": "benchmark only; holdout results do not select the deployed model"
+      },
+      "joint_class_support": {
+        "a_decision": 148,
+        "a_ko_tko": 89,
+        "a_submission": 47,
+        "b_decision": 126,
+        "b_ko_tko": 61,
+        "b_submission": 36
+      },
+      "duration_mae_seconds": 282.9946272946054,
+      "duration_thresholds": {
+        "0.5": {
+          "rows": 507,
+          "brier": 0.07701500729624434
+        },
+        "1.5": {
+          "rows": 507,
+          "brier": 0.19358707513215354
+        },
+        "2.5": {
+          "rows": 507,
+          "brier": 0.22834238472478716
+        },
+        "3.5": {
+          "rows": 45,
+          "brier": 0.2095436518170463
+        },
+        "4.5": {
+          "rows": 45,
+          "brier": 0.20856031972167383
+        }
+      },
+      "count_scores": {
+        "a_td_nll": 1.3683608336355324,
+        "a_sig_str_nll": 4.735030536147566,
+        "b_td_nll": 1.3757349006506658,
+        "b_sig_str_nll": 4.66752887302587,
+        "a_td_mae": 1.13515590483145,
+        "a_sig_str_mae": 24.926064738860404,
+        "b_td_mae": 1.1323002170584864,
+        "b_sig_str_mae": 24.725206900414072
+      },
+      "test_start": "2024-03-16",
+      "test_end": "2025-01-11",
+      "training_contract": {
+        "weight_training_rows": 5944,
+        "weight_training_end": "2023-02-25",
+        "blend_fit_rows": 199,
+        "calibration_fit_rows": 206,
+        "calibration_selection_rows": 207,
+        "calibration_start": "2023-03-04",
+        "last_supervised_date": "2024-03-09",
+        "production_refit": "Base weights are frozen before calibration; no post-calibration refit changes their distribution.",
+        "model_lineup": "Fixed original default families; no reuse of hyperparameters tuned on future folds."
+      },
+      "calibration": {
+        "selected": "none",
+        "selection_metric": "log_loss",
+        "fit_rows": 206,
+        "selection_rows": 207,
+        "candidates": {
+          "none": 0.6385158118320212,
+          "symmetric_platt": 0.652143198764784,
+          "symmetric_isotonic": 0.7676191907435086
+        }
+      }
+    },
+    {
+      "rows": 500,
+      "accuracy": 0.662,
+      "log_loss": 0.6220084868404494,
+      "brier": 0.2156151188316792,
+      "ece": 0.054203449849198074,
+      "uncalibrated": {
+        "rows": 500,
+        "accuracy": 0.662,
+        "log_loss": 0.6227134054766627,
+        "brier": 0.216243237238812,
+        "ece": 0.05439414810977005
+      },
+      "elo_baseline": {
+        "rows": 500,
+        "accuracy": 0.574,
+        "log_loss": 0.6826157838195804,
+        "brier": 0.2447520541707031,
+        "ece": 0.052663518655427864
+      },
+      "joint_log_loss": 1.5518589595584995,
+      "joint_accuracy": 0.376,
+      "joint_brier": 0.7518185224789897,
+      "direct_joint_challenger": {
+        "joint_log_loss": 1.5668862902378347,
+        "joint_accuracy": 0.364,
+        "winner": {
+          "rows": 500,
+          "accuracy": 0.636,
+          "log_loss": 0.629232071380998,
+          "brier": 0.2191582585355861,
+          "ece": 0.05228478309800065
+        },
+        "deployment": "benchmark only; holdout results do not select the deployed model"
+      },
+      "joint_class_support": {
+        "a_decision": 137,
+        "a_ko_tko": 88,
+        "a_submission": 52,
+        "b_decision": 106,
+        "b_ko_tko": 82,
+        "b_submission": 35
+      },
+      "duration_mae_seconds": 288.8091489570232,
+      "duration_thresholds": {
+        "0.5": {
+          "rows": 500,
+          "brier": 0.10304599524399172
+        },
+        "1.5": {
+          "rows": 500,
+          "brier": 0.20897805376137876
+        },
+        "2.5": {
+          "rows": 500,
+          "brier": 0.2259415234934537
+        },
+        "3.5": {
+          "rows": 44,
+          "brier": 0.24144306792898015
+        },
+        "4.5": {
+          "rows": 44,
+          "brier": 0.23464648466001703
+        }
+      },
+      "count_scores": {
+        "a_td_nll": 1.3679850457673928,
+        "a_sig_str_nll": 4.6294471325911655,
+        "b_td_nll": 1.2277569458927247,
+        "b_sig_str_nll": 4.607121356580354,
+        "a_td_mae": 1.1429342291117914,
+        "a_sig_str_mae": 25.19150202698424,
+        "b_td_mae": 1.0006213403419184,
+        "b_sig_str_mae": 23.98049224993569
+      },
+      "test_start": "2025-01-18",
+      "test_end": "2025-11-08",
+      "training_contract": {
+        "weight_training_rows": 6456,
+        "weight_training_end": "2023-12-16",
+        "blend_fit_rows": 201,
+        "calibration_fit_rows": 203,
+        "calibration_selection_rows": 203,
+        "calibration_start": "2024-01-13",
+        "last_supervised_date": "2025-01-11",
+        "production_refit": "Base weights are frozen before calibration; no post-calibration refit changes their distribution.",
+        "model_lineup": "Fixed original default families; no reuse of hyperparameters tuned on future folds."
+      },
+      "calibration": {
+        "selected": "symmetric_platt",
+        "selection_metric": "log_loss",
+        "fit_rows": 203,
+        "selection_rows": 203,
+        "candidates": {
+          "none": 0.6177759614558699,
+          "symmetric_platt": 0.6136611439921125,
+          "symmetric_isotonic": 0.6169503375768227
+        }
+      }
+    },
+    {
+      "rows": 501,
+      "accuracy": 0.6487025948103793,
+      "log_loss": 0.6272283596839301,
+      "brier": 0.21926237117927158,
+      "ece": 0.05201730837309642,
+      "uncalibrated": {
+        "rows": 501,
+        "accuracy": 0.6487025948103793,
+        "log_loss": 0.6263202738481717,
+        "brier": 0.21853784156336936,
+        "ece": 0.03531631511481828
+      },
+      "elo_baseline": {
+        "rows": 501,
+        "accuracy": 0.5808383233532934,
+        "log_loss": 0.6838105800277444,
+        "brier": 0.2453444415575384,
+        "ece": 0.0584844098233199
+      },
+      "joint_log_loss": 1.6017447066055084,
+      "joint_accuracy": 0.3213572854291417,
+      "joint_brier": 0.771859843327074,
+      "direct_joint_challenger": {
+        "joint_log_loss": 1.6025136068163086,
+        "joint_accuracy": 0.3153692614770459,
+        "winner": {
+          "rows": 501,
+          "accuracy": 0.6287425149700598,
+          "log_loss": 0.6243561921832478,
+          "brier": 0.2180220463001523,
+          "ece": 0.049613389740264156
+        },
+        "deployment": "benchmark only; holdout results do not select the deployed model"
+      },
+      "joint_class_support": {
+        "a_decision": 111,
+        "a_ko_tko": 111,
+        "a_submission": 47,
+        "b_decision": 95,
+        "b_ko_tko": 94,
+        "b_submission": 43
+      },
+      "duration_mae_seconds": 311.3453171357916,
+      "duration_thresholds": {
+        "0.5": {
+          "rows": 501,
+          "brier": 0.12054999377849117
+        },
+        "1.5": {
+          "rows": 501,
+          "brier": 0.2362138467974119
+        },
+        "2.5": {
+          "rows": 501,
+          "brier": 0.250879839916462
+        },
+        "3.5": {
+          "rows": 46,
+          "brier": 0.2489528874560094
+        },
+        "4.5": {
+          "rows": 46,
+          "brier": 0.23587038682351186
+        }
+      },
+      "count_scores": {
+        "a_td_nll": 1.358206308302028,
+        "a_sig_str_nll": 4.672451104473052,
+        "b_td_nll": 1.2172451965919389,
+        "b_sig_str_nll": 4.613528532937068,
+        "a_td_mae": 1.1480667322012867,
+        "a_sig_str_mae": 26.953220943187883,
+        "b_td_mae": 1.0546031129837035,
+        "b_sig_str_mae": 25.768503085375553
+      },
+      "test_start": "2025-11-15",
+      "test_end": "2026-10-17",
+      "training_contract": {
+        "weight_training_rows": 6960,
+        "weight_training_end": "2024-10-19",
+        "blend_fit_rows": 195,
+        "calibration_fit_rows": 205,
+        "calibration_selection_rows": 203,
+        "calibration_start": "2024-10-26",
+        "last_supervised_date": "2025-11-08",
+        "production_refit": "Base weights are frozen before calibration; no post-calibration refit changes their distribution.",
+        "model_lineup": "Fixed original default families; no reuse of hyperparameters tuned on future folds."
+      },
+      "calibration": {
+        "selected": "symmetric_platt",
+        "selection_metric": "log_loss",
+        "fit_rows": 205,
+        "selection_rows": 203,
+        "candidates": {
+          "none": 0.6120283941770273,
+          "symmetric_platt": 0.6013063119577562,
+          "symmetric_isotonic": 0.6231747804190791
+        }
+      }
+    }
+  ],
+  "market_evaluation": {
+    "status": "unavailable",
+    "reason": "No timestamped historical bookmaker odds supplied."
+  },
+  "production": {
+    "training_contract": {
+      "weight_training_rows": 7459,
+      "weight_training_end": "2025-09-23",
+      "blend_fit_rows": 193,
+      "calibration_fit_rows": 208,
+      "calibration_selection_rows": 204,
+      "calibration_start": "2025-09-27",
+      "last_supervised_date": "2026-10-17",
+      "production_refit": "Base weights are frozen before calibration; no post-calibration refit changes their distribution.",
+      "model_lineup": "Fixed original default families; no reuse of hyperparameters tuned on future folds."
+    },
+    "calibration": {
+      "selected": "none",
+      "selection_metric": "log_loss",
+      "fit_rows": 208,
+      "selection_rows": 204,
+      "candidates": {
+        "none": 0.6476074881575371,
+        "symmetric_platt": 0.647603299210333,
+        "symmetric_isotonic": 0.6489458897960748
+      }
+    },
+    "ensemble_weights": {
+      "LightGBM": 0.15285171040774678,
+      "XGBoost": 0.25585163627631047,
+      "CatBoost": 0.23561813496861816,
+      "HistGBM": 0.18399588038337295,
+      "ExtraTrees": 0.023282369998525853,
+      "LogReg": 0.14840026796542571
+    },
+    "market_blender": "unfitted; independent probabilities retained when prices are supplied",
+    "method_calibration": {
+      "temperature": 1.3455338275544786,
+      "identity_log_loss": 1.0203495075259115,
+      "candidate_log_loss": 0.999072216177426,
+      "fit_rows": 389,
+      "selection_rows": 216
+    },
+    "count_dispersion": {
+      "td": {
+        "poisson_nll": 1.2397737781609748,
+        "negative_binomial_nll": 1.0900097851547743,
+        "selected_dispersion": 0.9386603575215604
+      },
+      "sig_str": {
+        "poisson_nll": 9.009037937123548,
+        "negative_binomial_nll": 4.320957110513883,
+        "selected_dispersion": 0.26281567632069586
+      }
+    }
+  }
+}

@@ -4,8 +4,124 @@ A machine-learning system that predicts **(1) the winner** of a UFC bout and
 **(2) the method of victory** (Decision / KO-TKO / Submission), built and
 evaluated on strictly chronological data with no information leakage.
 
-The full implementation is a single, self-contained script:
-[`UFC_ML_Model.py`](UFC_ML_Model.py).
+The original model and GUI are in [`UFC_ML_Model.py`](UFC_ML_Model.py).
+The default training path now uses shared chronological features, calibrated
+winner probabilities, coherent joint outcomes, and initial duration/count
+models. The historical tuning workflow remains available with `--legacy`.
+
+## Corrected forecasting and market research
+
+The current implementation adds:
+
+- One event-frozen feature state for historical and live matchups. Finish
+  priors, rating normalization, style thresholds, and altitude fallbacks use
+  completed past events. All fights sharing a date are snapshotted before any
+  results from that date update the state.
+- Age from the recorded birth date, with a labelled dated-age estimate when
+  birth date is unavailable; corrected inactivity/activity calculations and
+  gender context from the explicit gender field.
+- Separate event groups for fitting ensemble weights, fitting calibration,
+  and selecting calibration by log-loss. Calibration includes an identity
+  candidate and preserves corner symmetry. Base weights remain frozen before
+  the calibration window rather than being refitted afterward.
+- Six joint winner/method outcomes from correctly winner-conditioned method
+  probabilities. A direct six-class classifier is evaluated as a challenger.
+- A 30-second competing-risk timing model reconciled to joint outcome
+  probabilities, plus Poisson/negative-binomial duration-mixture baselines
+  for significant strikes and takedowns.
+- Append-only SQLite forecast, schedule, quote, result and model records,
+  with CSV ingestion, pre-fight moneyline paper backtests, paired no-vig
+  bookmaker benchmarks, closing-line value, and event-block return intervals
+  when enough completed events are available.
+
+No historical bookmaker prices have been supplied. Market blending starts
+**unfitted** and retains the independent probability when prices are entered.
+The blend weight can be learned and validated after sufficient timestamped
+historical forecasts and quotes are available. No historical ROI is claimed.
+
+Train and generate reports:
+
+```bash
+python scripts/research.py train --model .ufc_model_cache/causal-production.pkl
+python scripts/research.py predict results/ufc333-card.json /tmp/ufc333-causal.json \
+  --model .ufc_model_cache/causal-production.pkl \
+  --prediction-date 2026-10-19 \
+  --database .ufc_model_cache/research.sqlite
+```
+
+Training evaluates three complete advancing-window folds. Every fold fits its
+own imputation, feature pruning, base models, blend, calibration, methods,
+duration and count models using earlier events only. The default winner lineup
+uses the original default LightGBM, XGBoost, CatBoost, HistGBM, ExtraTrees and
+logistic-regression families; it does not reuse future-tuned hyperparameters.
+`TrainingConfig` in `research_pipeline.py` exposes event-window and model-size
+settings. Reduced settings are for smoke experiments, not the default full run.
+
+The runner writes a trained model, checksum/package/source metadata, and an
+evaluation JSON beside the model. Forecasting writes JSON, Markdown and Excel,
+including explanations, coherent outcomes, duration and count projections.
+`prediction_date` is the reference date for age/inactivity features. It defaults
+to the current date in America/New_York in this runner; pass it explicitly for
+repeatable forecasts. Model histories must precede that date.
+
+Card JSON uses canonical dataset names and weight-class labels, explicit
+gender, rounds, and title status. In particular, the dataset uses Women's
+Strawweight and otherwise unprefixed class labels with gender stored separately.
+Use the card runner for explicit title/date context; the GUI keeps its original
+basic text-entry format. Unknown fighters are skipped unless the card explicitly
+sets `allow_debutant_prior: true`.
+
+The SQLite archive can retain date-only events, but exact timezone-aware starts
+are required for market evaluation. Supply `--event-start` when known or import
+the schedule with real odds. List the registered fight IDs/corner order before
+mapping provider data:
+
+```bash
+python scripts/research.py list-fights --database .ufc_model_cache/research.sqlite
+python scripts/research.py import-odds YOUR_ODDS.csv --database .ufc_model_cache/research.sqlite
+python scripts/research.py import-results YOUR_RESULTS.csv --database .ufc_model_cache/research.sqlite
+python scripts/research.py backtest --database .ufc_model_cache/research.sqlite \
+  --model-id MODEL_ID_FROM_METADATA --output /tmp/moneyline-backtest.json
+```
+
+CSV headers are provided in `examples/odds-template.csv` and
+`examples/results-template.csv`; they contain no invented prices or results.
+Times must include UTC offsets. Supply one price format or exactly consistent
+decimal/American prices. Moneyline `a`/`b` always refers to the registered corner
+order. Unknown fights can be registered by including event/fighter identity and
+schedule fields in the odds CSV. Local fighter IDs are retained; source IDs can
+be supplied through the API. The modeling histories remain name-keyed.
+
+The initial backtester uses one-unit moneyline stakes, at most one qualifying
+bet per fight, only offers observed before a forecast, a configurable quote-age
+limit and EV threshold, and the same bookmaker for entry/closing comparisons.
+Draws and no-contests void two-way moneylines. Other market quotes can be stored,
+but method/prop settlement simulation requires market-specific rules and is not
+part of this initial moneyline backtester. Closing prices never influence entry
+selection. Retrospective imports are explicitly labelled, and a model cutoff
+must precede both its simulated forecast and event dates.
+
+After historical forecasts and quotes are available, learn a market layer:
+
+```bash
+python scripts/research.py fit-market --database .ufc_model_cache/research.sqlite \
+  --model .ufc_model_cache/causal-production.pkl --bookmaker "BOOKMAKER_NAME" \
+  --output .ufc_model_cache/market-production.pkl
+```
+
+At least 100 historical samples and separate later validation events are
+required. A combined forecast is retained only when it improves validation
+log-loss over the independent model. It is also compared with the market alone.
+
+Model/source/data/configuration/package fingerprints invalidate stale artifacts.
+Pre-correction binary models must be retrained. Historical test periods were
+already inspected during development: current evaluation is retrospective, and
+prospective forecasts should be retained before future fights. Six-outcome
+probabilities condition on decisive Decision/KO-TKO/Submission results; draws,
+no-contests and DQ are not explicitly priced. Initial count models do not model
+rate/finish-time dependence beyond pre-bout features, and interval timing is an
+approximation. Feature contributions and component disagreement retain the
+limitations described in the explanation section below.
 
 ## Current dataset and UFC 333 forecasts
 
@@ -15,11 +131,44 @@ original records and the 320-column schema. Source events, checksums, missing
 elevation coverage, and validation are recorded in
 [`results/data-update-2026-10-18.json`](results/data-update-2026-10-18.json).
 
-The retrained model's predictions for all 11 requested UFC 333 bouts are saved
-in [this table](results/ufc333-predictions-2026-10-18.md), with full probabilities
-in [JSON](results/ufc333-predictions-2026-10-18.json) and the
-[card inputs](results/ufc333-card.json). These are forecasts generated on
-October 18, before the scheduled October 24 event.
+The corrected **v2.0.0-causal.1** forecasts for all 11 requested UFC 333 bouts
+are saved as [matchup explanations](results/ufc333-causal-2026-10-19.md),
+[full JSON](results/ufc333-causal-2026-10-19.json), and
+[Excel](results/ufc333-causal-2026-10-19.xlsx), using the
+[card inputs](results/ufc333-card.json) and an October 19 prediction date.
+The October 18 [table](results/ufc333-predictions-2026-10-18.md) and
+[JSON](results/ufc333-predictions-2026-10-18.json) are retained as historical
+outputs from the previous model.
+
+The completed corrected run scored **65.3% winner accuracy across 1,508
+chronological test fights**, with log-loss **0.6268**. These are retrospective
+diagnostics on previously inspected history, not independent confirmation or
+a controlled improvement over the original benchmark. The production
+calibration selection retained identity. Read the
+[evaluation report](results/causal-model-evaluation.md) and
+[machine-readable evaluation](results/causal-model-evaluation.json).
+
+The [version manifest](results/model-v2-manifest.json) records model, source,
+dataset, package and artifact checksums. The 221 MB trained checkpoint is
+distributed as an asset of the **v2.0.0-causal.1** research prerelease on
+[GitHub Releases](https://github.com/vibescodesonly/the-fight-model/releases),
+rather than as a Git blob. The release starts as a draft visible to repository
+maintainers until published. Download `causal-production.pkl`,
+`causal-production.meta.json` and `causal-production.evaluation.json` into
+`.ufc_model_cache/` of this version's checkout, install its pinned requirements,
+and run:
+
+```bash
+python scripts/research.py predict results/ufc333-card.json /tmp/ufc333-causal.json \
+  --model .ufc_model_cache/causal-production.pkl \
+  --data pure_fight_data_with_event_and_camp_altitudes.csv \
+  --prediction-date 2026-10-19
+```
+
+Only load trusted checkpoints: pickle loading executes Python code. The runner
+validates the checkpoint and source checksums before loading, then validates
+the dataset. The explicit `--data` path supports restoring a checkpoint in a
+different checkout without relaxing its dataset checksum.
 
 ## Original published benchmark
 
@@ -45,7 +194,11 @@ These numbers use the original dataset at commit
 Training on the updated dataset evaluates a later holdout window (see
 [Reproducing results](#reproducing-results)).
 
-## How it works
+## Original ensemble design
+
+The following describes the historical tuning architecture. The corrected
+default workflow and its evaluation contract are described above; use the
+original commit for the paper's exact implementation and dataset.
 
 ### 1. Leak-safe chronological feature engineering
 
@@ -135,6 +288,13 @@ retraining noise cannot silently degrade the deployed blend.
 | `Stat Definitions.txt` | Data dictionary: a definition for every dataset column. |
 | `results/` | Original benchmark artifacts, dated data-update audit, and UFC 333 forecasts. |
 | `requirements.txt` | Pinned Python dependencies. |
+| `temporal_features.py` | Shared event-frozen historical/live feature state. |
+| `research_pipeline.py` | Default chronological fitting and complete rolling evaluation. |
+| `probability_calibration.py` | Calibration selection and fitted market blending. |
+| `outcome_models.py` | Conditional/joint outcomes, timing, and count distributions. |
+| `market_store.py` | Append-only research database and moneyline backtests. |
+| `matchup_reports.py` | Grouped model explanations and readable reports. |
+| `scripts/research.py` | Training, forecasting, archiving, CSV ingestion and evaluation CLI. |
 | `CITATION.cff` | Citation metadata. |
 | `.ufc_model_cache/` | Generated: cached training stages (safe to delete; forces retrain). |
 | `UFC_Predictions.xlsx` | Generated: prediction export from the GUI. |
@@ -148,6 +308,67 @@ retraining noise cannot silently degrade the deployed blend.
 LightGBM, XGBoost, CatBoost, and Optuna are technically optional — the script
 degrades gracefully if any is missing — but the published results use all of
 them.
+
+## Matchup explanation reports
+
+The GUI now includes an **Explanations** worksheet in its prediction export.
+For Python callers, enable reports explicitly:
+
+```python
+prediction = pipeline.predict_matchup(
+    "Alexander Volkanovski", "Movsar Evloev",
+    weight_class="Featherweight", gender="Men", rounds=5,
+    is_title=True, prediction_date="2026-10-18",
+    include_explanation=True,
+)
+report = prediction["explanation"]
+```
+
+Each report contains fighter statistical comparisons, recorded-history and
+missing-input flags, component-model probabilities, model disagreement, fair
+odds, and grouped contributions to the raw winner-model probability. If both
+moneylines are supplied, it also reports market probabilities and model-implied
+expected returns. Market blending is kept separate from statistical attribution.
+
+Contributions are exact Shapley values **for the specified feature groups and
+reference**: the reference averages the matchup's original and corner-swapped
+feature vectors. Every combination of up to ten groups is evaluated, and the
+contributions add to the difference between reference and model probabilities.
+Synthetic combinations of correlated inputs may be unlike real fights; these
+are explanations of model behavior, not causal effects. Disagreement between
+correlated models is not a statistical confidence interval. Method-of-victory
+contributions are not attributed.
+
+Generate JSON, Markdown, and Excel reports for a card from a trusted serialized
+pipeline and its metadata:
+
+```bash
+python scripts/predict_card_reports.py results/ufc333-card.json /tmp/ufc333-reports.json \
+  --model /path/to/trained-pipeline.pkl \
+  --metadata /path/to/trained-pipeline-meta.json \
+  --prediction-date 2026-10-18
+```
+
+Metadata must include `source_data_sha256`, the SHA-256 of training-source bytes
+followed by CSV bytes, and `ufc_environment`, the explicitly set `UFC_*` feature
+switches listed in the runner. For a retained model trained before the reporting
+changes, provide its attested original source with `--training-source`. The runner
+verifies the fingerprint and rejects changes to training definitions or settings;
+presentation and matchup API changes are permitted. It records training,
+inference, report-source, and dataset fingerprints separately. Model pickle files
+must come from a trusted source.
+
+The corrected pipeline supplies live finish priors and fixes age/date/gender
+handling. The legacy refit preserves stage-specific feature selections. Reports
+still expose missing inputs and sparse histories. Reporting itself does not
+establish improved accuracy. A past prediction date requires an appropriately
+earlier model/history snapshot; changing a date cannot remove future knowledge.
+
+Validation:
+
+```bash
+python -m unittest discover -s tests -v
+```
 
 ## Data
 
@@ -185,7 +406,9 @@ pip install -r requirements.txt
 python UFC_ML_Model.py --train-only
 ```
 
-This trains and evaluates the current dataset. To reproduce the original
+This runs the corrected default training/evaluation workflow on the current
+dataset. `python UFC_ML_Model.py --train-only --legacy` selects the historical
+tuning workflow with corrected features. To reproduce the original
 published benchmark, use the original commit linked above with its dataset.
 The roughly 1 GB serialized production model is retained in the cloud
 environment; generated model binaries and training caches are excluded from
@@ -201,10 +424,12 @@ Notes:
   the same data and configuration reproduce the same results and hit the
   stage caches. Minor cross-platform variation is possible from multithreaded
   tree libraries.
-- **Runtime.** A cold run performs the full Optuna search (80 trials × 3
+- **Runtime.** The legacy cold run performs the full Optuna search (80 trials × 3
   libraries for the winner stage, 80 × 2 + 400 blend trials for the method
   stage) — expect several hours on a desktop CPU. Subsequent runs replay the
-  cached stages in minutes.
+  cached stages in minutes. Default corrected training uses fixed default
+  model families and evaluates the complete pipeline across chronological folds;
+  unchanged runs load the source/data/configuration-addressed cache.
 - **GUI.** `python UFC_ML_Model.py` (no flags) opens the prediction GUI: one
   matchup per line as `Red,Blue,Weight Class,Gender,Rounds[,Elevation ft or
   Location]`, with optional American moneyline odds after each name

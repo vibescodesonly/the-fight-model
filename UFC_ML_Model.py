@@ -119,9 +119,9 @@ CACHE_DIR = os.path.join(SCRIPT_DIR, ".ufc_model_cache")
 METHOD_CHAMPION_PATH = os.path.join(SCRIPT_DIR, ".ufc_model_cache", "method_champion_cfg.json")
 ###################################################################################################
 # Bump when winner-stage training logic changes.
-WINNER_CACHE_VERSION = "v22"
+WINNER_CACHE_VERSION = "v23-causal"
 # Bump when method-stage training logic changes.
-METHOD_CACHE_VERSION = "v39"
+METHOD_CACHE_VERSION = "v40-causal"
 ###################################################################################################
 # Pickle payload discriminator (stable across cache file renames).
 WINNER_STAGE_CACHE_KIND = "ufc_winner_stage_v1"
@@ -1324,6 +1324,7 @@ def _extract_profile_from_row(row, prefix):
         "ape_index": row.get(f"{prefix}_ape_index", float("nan")),
         "weight": row.get(f"{prefix}_weight", float("nan")),
         "age": row.get(f"{prefix}_age_at_event", float("nan")),
+        "date_of_birth": row.get(f"{prefix}_date_of_birth"),
         "stance": row.get(f"{prefix}_stance", ""),
     }
 
@@ -1539,6 +1540,7 @@ def extract_fight_record(row, prefix, opp, result, opp_glicko_mu=MU_0):
         "ape_index": g(f"{prefix}_ape_index"),
         "weight": g(f"{prefix}_weight"),
         "age": g(f"{prefix}_age_at_event"),
+        "date_of_birth": row.get(f"{prefix}_date_of_birth"),
         "stance": row.get(f"{prefix}_stance", ""),
     }
 
@@ -1601,6 +1603,7 @@ def _make_synthetic_fight_record(current_date=None, profile=None):
         "ape_index": profile.get("ape_index", 2.0),
         "weight": profile.get("weight", 170.0),
         "age": profile.get("age", 30.0),
+        "date_of_birth": profile.get("date_of_birth"),
         "stance": profile.get("stance", "Orthodox"),
     }
     for rd in range(1, 6):
@@ -1622,6 +1625,21 @@ def compute_fighter_features(history, glicko, opp_glickos, current_date, fallbac
     """Compute ~130 features from a fighter's fight history."""
     global _FIGHTER_FEAT_KEYS
     fallback_profile = fallback_profile or {}
+
+    def age_at_date():
+        latest = history[-1] if history else {}
+        birth = latest.get("date_of_birth")
+        if birth is None or pd.isna(birth):
+            birth = fallback_profile.get("date_of_birth")
+        birth = pd.to_datetime(birth, errors="coerce")
+        when = pd.to_datetime(current_date, errors="coerce")
+        if pd.notna(birth) and pd.notna(when):
+            return max(0.0, (when - birth).days / 365.2425)
+        value = _num_or(latest.get("age"), _num_or(fallback_profile.get("age"), float("nan")))
+        observed = pd.to_datetime(latest.get("date"), errors="coerce")
+        if pd.notna(observed) and pd.notna(when) and not _isnan(value):
+            value += max(0, (when - observed).days) / 365.2425
+        return value
 
     n = len(history)
     if n == 0:
@@ -1711,6 +1729,10 @@ def compute_fighter_features(history, glicko, opp_glickos, current_date, fallbac
             "finish_r3_plus_share": 0.0,
             "avg_finish_round_w": 0.0,
         })
+        feats["age"] = age_at_date()
+        age = _num_or(feats["age"], 30.0)
+        feats.update(age_squared=age ** 2, prime_age=float(26 <= age <= 32),
+                     age_decline=max(0.0, age - 32))
         return feats
 
     feats = {}
@@ -1858,7 +1880,7 @@ def compute_fighter_features(history, glicko, opp_glickos, current_date, fallbac
     feats["reach"] = latest["reach"] if not _isnan(latest["reach"]) else _num_or(fallback_profile.get("reach"), float("nan"))
     feats["ape_index"] = latest["ape_index"] if not _isnan(latest["ape_index"]) else _num_or(fallback_profile.get("ape_index"), float("nan"))
     feats["weight"] = latest["weight"] if not _isnan(latest["weight"]) else _num_or(fallback_profile.get("weight"), float("nan"))
-    feats["age"] = latest["age"] if not _isnan(latest["age"]) else _num_or(fallback_profile.get("age"), float("nan"))
+    feats["age"] = age_at_date()
 
     # ── Experience ──
     feats["num_fights"] = n
@@ -1913,7 +1935,7 @@ def compute_fighter_features(history, glicko, opp_glickos, current_date, fallbac
             break
     feats["win_streak"] = win_streak
     feats["loss_streak"] = loss_streak
-    if current_date is not None and not _isnan(history[-1]["date"]):
+    if current_date is not None and pd.notna(history[-1]["date"]):
         feats["days_inactive"] = (current_date - history[-1]["date"]).days
     else:
         feats["days_inactive"] = 365
@@ -2425,12 +2447,12 @@ def compute_fighter_features(history, glicko, opp_glickos, current_date, fallbac
     if current_date is not None:
         fights_last_year = sum(
             1 for h in history
-            if not _isnan(h["date"]) and (current_date - h["date"]).days <= 365
+            if pd.notna(h["date"]) and 0 <= (current_date - h["date"]).days <= 365
         )
         feats["fights_last_year"] = float(fights_last_year)
         wins_last_year = sum(
             1 for h in history
-            if not _isnan(h["date"]) and (current_date - h["date"]).days <= 365
+            if pd.notna(h["date"]) and 0 <= (current_date - h["date"]).days <= 365
             and h["result"] == "W"
         )
         feats["win_rate_last_year"] = _bayes_shrink(
@@ -2638,7 +2660,7 @@ def _set_fighter_keys(keys):
 
 # ─── Matchup feature computation ──────────────────────────────────────────────
 
-def compute_matchup_features(a_feats, b_feats, is_title=0, total_rounds=3, weight_class=""):
+def compute_matchup_features(a_feats, b_feats, is_title=0, total_rounds=3, weight_class="", gender=""):
     """Build the matchup feature dict for fighter A (red) vs fighter B (blue).
 
     Emits a d_<stat> difference (A minus B) for every per-fighter feature,
@@ -2955,7 +2977,8 @@ def compute_matchup_features(a_feats, b_feats, is_title=0, total_rounds=3, weigh
     features["d_tdd_vs_td_attack"] = (a_td_acc * (1.0 - b_tdd)) - (b_td_acc * (1.0 - a_tdd))
 
     # ── Batch 4: form / context / priors (§E, §F, §G) ──
-    features["gender_flag"] = 1.0 if weight_class.startswith("Women") else 0.0
+    features["gender_flag"] = float(str(gender).lower() in ("women", "female")
+                                   if gender else weight_class.startswith("Women"))
 
     features["d_title_x_cardio"] = float(is_title) * (a_cdg - b_cdg)
 
@@ -2982,52 +3005,19 @@ def compute_matchup_features(a_feats, b_feats, is_title=0, total_rounds=3, weigh
 # ─── Context finish priors ────────────────────────────────────────────────────
 
 def _precompute_context_finish_priors(df):
-    """Compute per-row finish priors conditioned on (weight_class, gender, total_rounds, is_title).
-
-    ctx_finish_prior_2y: exponentially time-decayed (half-life 730 days) Bayesian
-        estimate of the finish rate for fights of the same type before this date.
-    ref_finish_prior: unweighted Laplace-smoothed count-based version of the same.
-    Both use alpha=20 and p0 = global historical finish rate as the prior mean.
-    """
-    n = len(df)
-    ctx_arr = np.full(n, np.nan, dtype=float)
-    ref_arr = np.full(n, np.nan, dtype=float)
-
-    methods = df["method"].astype(str).str.lower()
-    is_finish = (~methods.str.contains("dec", na=False)).astype(float).values
-    p0 = float(np.mean(is_finish)) if n > 0 else 0.55
-    alpha = 20.0
-
-    wc_col = df["weight_class"].astype(str).values if "weight_class" in df.columns else np.full(n, "", dtype=object)
-    gd_col = df["gender"].astype(str).str.lower().values if "gender" in df.columns else np.full(n, "unknown", dtype=object)
-    rd_col = df["total_rounds"].fillna(3).astype(int).values if "total_rounds" in df.columns else np.full(n, 3, dtype=int)
-    tt_col = df["is_title_bout"].fillna(0).astype(int).values if "is_title_bout" in df.columns else np.zeros(n, dtype=int)
-
-    epoch = df["event_date"].iloc[0]
-    days = ((df["event_date"] - epoch) / pd.Timedelta(days=1)).values.astype(float)
-
-    # Per-context running state: (decayed_finish_sum, decayed_total_weight, finish_count, total_count, last_days)
-    state = {}
-
-    for i in range(n):
-        key = (wc_col[i], gd_col[i], int(rd_col[i]), int(tt_col[i]))
-        cur_d = days[i]
-
-        if key in state:
-            fs, tw, fc, tc, last_d = state[key]
-            decay = 2.0 ** (-(cur_d - last_d) / 730.0)
-            fs *= decay
-            tw *= decay
-        else:
-            fs, tw, fc, tc = 0.0, 0.0, 0, 0
-
-        ctx_arr[i] = (fs + alpha * p0) / (tw + alpha)
-        ref_arr[i] = (fc + alpha * p0) / (tc + alpha)
-
-        # Update state with current fight (weight = 1.0 at this moment)
-        state[key] = (fs + float(is_finish[i]), tw + 1.0, fc + int(is_finish[i]), tc + 1, cur_d)
-
-    return ctx_arr, ref_arr
+    """Event-frozen hierarchical priors using strictly earlier event dates."""
+    from temporal_features import ContextPriors
+    frame = df.reset_index(drop=True)
+    state = ContextPriors()
+    decayed, counts = np.zeros(len(frame)), np.zeros(len(frame))
+    for date, block in frame.groupby("event_date", sort=True):
+        for i, row in block.iterrows():
+            values = state.predict(row.get("weight_class", ""), row.get("gender", ""),
+                row.get("total_rounds", 3), row.get("is_title_bout", 0), date)
+            decayed[i], counts[i] = values["ctx_finish_prior_2y"], values["ref_finish_prior"]
+        for _, row in block.iterrows():
+            state.observe(row, _normalize_method_label(row["method"]))
+    return decayed, counts
 
 
 # ─── Style-class opponent matchup tracker ────────────────────────────────────
@@ -3432,7 +3422,7 @@ class _BaggedHGB:
 
 # ─── Training data builder ────────────────────────────────────────────────────
 
-def build_training_data(csv_path, progress_cb=None):
+def _build_training_data_legacy(csv_path, progress_cb=None):
     """Build the leak-safe chronological training matrix from the fights CSV.
 
     Fights are processed in date order. For each fight, both fighters'
@@ -3448,7 +3438,7 @@ def build_training_data(csv_path, progress_cb=None):
     """
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     _ensure_fighter_feature_keys(df["event_date"].iloc[0] if len(df) else None)
     mov_scales = _compute_mov_scales(df) if MOV_RATINGS_ENABLED else None
 
@@ -3615,7 +3605,7 @@ def build_training_data(csv_path, progress_cb=None):
 def _method_labels_from_csv(csv_path):
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     rows = []
     for _, row in df.iterrows():
         winner = str(row.get("winner", "")).strip()
@@ -4593,14 +4583,14 @@ def _div_rank_feature_row(r_name, b_name, division, div_ratings, last_fight_date
     }
 
 
-def _build_elo_features_from_csv(csv_path):
+def _build_elo_features_legacy(csv_path):
     """
     Build chronological pre-fight Elo features aligned to the training rows
     (only fights with winner in {"Red", "Blue"}).
     """
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     mov_scales = _compute_mov_scales(df) if MOV_RATINGS_ENABLED else None
 
     ratings = defaultdict(lambda: ELO_BASE)
@@ -4784,7 +4774,7 @@ def _phase_success(row, scales):
         raw = (PHASE_W_VOL * _z(vol, "strike_vol")
                + PHASE_W_ACC * _z(acc, "strike_acc")
                + PHASE_W_KD * _z(kd, "kd_pm"))
-        return float(np.clip(1.0 / (1.0 + np.exp(-PHASE_STEEP * raw)), 0.02, 0.98))
+        return float(np.clip(1.0 / (1.0 + np.exp(np.clip(-PHASE_STEEP * raw, -60, 60))), 0.02, 0.98))
 
     def _grapple(px, opp):
         td = _f(f"{px}_td") / t15
@@ -4797,7 +4787,7 @@ def _phase_success(row, scales):
                + PHASE_W_GNP * _z(gnp, "grap_gnp")
                + PHASE_W_SUB * _z(sub, "grap_sub")
                - PHASE_W_REV * _z(opp_rev, "rev"))
-        return float(np.clip(1.0 / (1.0 + np.exp(-PHASE_STEEP * raw)), 0.02, 0.98))
+        return float(np.clip(1.0 / (1.0 + np.exp(np.clip(-PHASE_STEEP * raw, -60, 60))), 0.02, 0.98))
 
     def _grap_eng(px):
         return (_f(f"{px}_td_att") + _f(f"{px}_sub_att") >= PHASE_GRAPPLE_MIN_ACTIONS
@@ -4856,7 +4846,7 @@ def _phase_glicko_features(r_so, b_so, r_sd, b_sd, r_go, b_go, r_gd, b_gd):
     }
 
 
-def _build_phase_glicko_features_from_csv(csv_path):
+def _build_phase_glicko_features_legacy(csv_path):
     """Chronological pre-fight offense/defense phase-Glicko features, aligned to
     the training rows (winner in Red/Blue). Returns (DataFrame, strike_off,
     strike_def, grapple_off, grapple_def). Leak-safe: each row reads pre-fight
@@ -4864,7 +4854,7 @@ def _build_phase_glicko_features_from_csv(csv_path):
     """
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     scales = _compute_phase_scales(df)
 
     so, sd, go, gd = {}, {}, {}, {}   # strike_off, strike_def, grapple_off, grapple_def
@@ -4909,7 +4899,7 @@ def _training_row_dates_from_csv(csv_path):
     """Return event_date series aligned with training rows (winner in Red/Blue)."""
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     out = []
     for _, row in df.iterrows():
         winner = str(row.get("winner", "")).strip()
@@ -4922,7 +4912,7 @@ def _training_row_meta_from_csv(csv_path):
     """Return row metadata aligned with training rows (winner in Red/Blue)."""
     df = pd.read_csv(csv_path)
     df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-    df = df.sort_values("event_date").reset_index(drop=True)
+    df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
     rows = []
     for _, row in df.iterrows():
         winner = str(row.get("winner", "")).strip()
@@ -5137,6 +5127,29 @@ class BenchmarkScores:
     old_baseline_logloss: float | None
 
 
+def build_training_data(csv_path, progress_cb=None):
+    from temporal_features import load_frame
+    b = load_frame(csv_path, sys.modules[__name__], progress_cb)
+    state = b["state"]
+    return (b["base"].copy(), b["y"].copy(), state.histories, state.glicko,
+            state.opponents, state.style, dict(location_altitude=state.location_altitude,
+            alt_median=state.alt_median, fighter_train_alt=state.camps,
+            train_alt_median=state.camp_median))
+
+
+def _build_elo_features_from_csv(csv_path):
+    from temporal_features import load_frame
+    b = load_frame(csv_path, sys.modules[__name__])
+    state = b["state"]
+    return b["elo"].copy(), state.elo, state.div_elo, state.last_dates, state.elo_history
+
+
+def _build_phase_glicko_features_from_csv(csv_path):
+    from temporal_features import load_frame
+    b = load_frame(csv_path, sys.modules[__name__])
+    return b["phase"].copy(), *b["state"].phase
+
+
 class SuperEnsembleModel:
     """The deployable trained model: winner ensemble + two-stage method head.
 
@@ -5179,34 +5192,22 @@ class SuperEnsembleModel:
         return out
 
     def predict_proba_single(self, feat_dict):
-        """P(first fighter wins) for one matchup feature dict.
+        return float(self.predict_proba_rows(pd.DataFrame([feat_dict]))[0])
 
-        Every base model predicts the row both as-given and corner-swapped
-        (forward/reverse averaged), the combiner blends the per-model
-        probabilities, and the optional calibrator / corner correction are
-        applied — the exact transform chain evaluated on the holdout.
-        """
-        X = pd.DataFrame([feat_dict])
+    def predict_proba_rows(self, X, return_components=False):
         X_imp, X_sc = self._prepare(X)
-        p_orig = self._predict_all(X_imp, X_sc)
-        X_sw = _swap_features(X)
-        X_sw_imp, X_sw_sc = self._prepare(X_sw)
-        p_sw = self._predict_all(X_sw_imp, X_sw_sc)
-
-        rows = {}
-        for name in self.model_order:
-            fwd = float(p_orig[name][0])
-            rev = float(p_sw[name][0])
-            rows[name] = (fwd + (1.0 - rev)) / 2.0
-        meta = pd.DataFrame([rows], columns=self.model_order)
-        p = float(_combine_probs(meta, self.combiner)[0])
+        forward = self._predict_all(X_imp, X_sc)
+        swapped, swapped_scaled = self._prepare(_swap_features(X))
+        reverse = self._predict_all(swapped, swapped_scaled)
+        components = pd.DataFrame({name: (np.asarray(forward[name]) + (1.-np.asarray(reverse[name])))/2.
+                                   for name in self.model_order}, columns=self.model_order)
+        p = _combine_probs(components, self.combiner)
         if self.calibrator is not None:
-            p = float(self.calibrator.predict_proba(np.array([[p]]))[:, 1][0])
-        # Corner-aware shift (first fighter = red corner). Symmetric model → no-op
-        # when corner_correction == 0.0.
+            p = self.calibrator.predict_proba(np.asarray(p).reshape(-1, 1))[:, 1]
         if self.corner_correction:
-            p = float(_apply_corner_correction(np.array([p]), self.corner_correction)[0])
-        return float(np.clip(p, 1e-6, 1 - 1e-6))
+            p = _apply_corner_correction(p, self.corner_correction)
+        p = np.clip(p, 1e-6, 1-1e-6)
+        return (p, components) if return_components else p
 
     def predict_method_probs(
         self, feat_dict, winner_is_a=True, weight_class="", gender="",
@@ -5221,6 +5222,9 @@ class SuperEnsembleModel:
         UFCSuperModelPipeline.train). Returns a normalized dict over
         METHOD_LABELS; uniform 1/3 each when no method bundle is available.
         """
+        if getattr(self, "conditional_methods", None) is not None:
+            probabilities = self.conditional_methods.predict(pd.DataFrame([feat_dict]), winner_is_a)[0]
+            return dict(zip(METHOD_LABELS, map(float, probabilities)))
         if not self.method_bundle or not self.method_feat_cols:
             return {"Decision": 1.0 / 3.0, "KO/TKO": 1.0 / 3.0, "Submission": 1.0 / 3.0}
         X = pd.DataFrame([feat_dict]).reindex(columns=self.method_feat_cols)
@@ -5425,6 +5429,7 @@ class UFCSuperModelPipeline:
 
     def __init__(self, csv_path=DATA_PATH, logger=None, progress_cb=None):
         self.csv_path = csv_path
+        self._feature_version = "event-causal-v1"
         self.log = logger or (lambda s: None)
         self.progress_cb = progress_cb
         self.model = None
@@ -5514,7 +5519,7 @@ class UFCSuperModelPipeline:
     def _build_fighter_meta(self):
         df = pd.read_csv(self.csv_path)
         df["event_date"] = pd.to_datetime(df["event_date"], format="%m/%d/%Y", errors="coerce")
-        df = df.sort_values("event_date").reset_index(drop=True)
+        df = df.sort_values("event_date", kind="stable").reset_index(drop=True)
         meta = {}
         for _, row in df.iterrows():
             for px in ("r", "b"):
@@ -5532,7 +5537,15 @@ class UFCSuperModelPipeline:
                 }
         self.fighter_meta = meta
 
-    def train(self, winner_only=False):
+    def train(self, winner_only=False, legacy=False):
+        if legacy:
+            from temporal_features import load_frame
+            load_frame(self.csv_path, sys.modules[__name__], self._log)["state"].attach(self)
+            return self._train_legacy(winner_only=winner_only)
+        from research_pipeline import train_pipeline
+        return train_pipeline(self, core=sys.modules[__name__], winner_only=winner_only)
+
+    def _train_legacy(self, winner_only=False):
         """Train and evaluate the full model; returns the production model.
 
         Runs every stage described in the class docstring, logging a
@@ -7655,24 +7668,26 @@ class UFCSuperModelPipeline:
                 _stage1_params_all.setdefault("random_state", RANDOM_SEED + 808)
                 stage1_all = _BaggedHGB(_stage1_params_all, n_estimators=METHOD_HGB_BAG,
                                         base_seed=RANDOM_SEED + 808, subsample=METHOD_HGB_BAG_SUBSAMPLE)
-                stage1_all.fit(X_all_method_imp, y_all_bin, sample_weight=w_all_stage1)
+                stage1_columns_all = list(method_bundle["stage1_cols"])
+                stage2_columns_all = list(method_bundle["stage2_cols"])
+                stage1_all.fit(X_all_method_imp[stage1_columns_all], y_all_bin, sample_weight=w_all_stage1)
                 stage1_rf_all = RandomForestClassifier(
                     n_estimators=420, max_depth=10, min_samples_leaf=4,
                     max_features=0.7, random_state=RANDOM_SEED + 910, n_jobs=-1,
                     class_weight="balanced_subsample",
                 )
-                stage1_rf_all.fit(X_all_method_imp, y_all_bin)
+                stage1_rf_all.fit(X_all_method_imp[stage1_columns_all], y_all_bin)
                 stage1_et_all = ExtraTreesClassifier(
                     n_estimators=560, max_depth=12, min_samples_leaf=3,
                     max_features=0.72, random_state=RANDOM_SEED + 914, n_jobs=-1,
                     class_weight="balanced_subsample",
                 )
-                stage1_et_all.fit(X_all_method_imp, y_all_bin)
+                stage1_et_all.fit(X_all_method_imp[stage1_columns_all], y_all_bin)
 
                 fin_mask_all = (y_method_df["finish_bin"].values == "Finish")
                 if int(np.sum(fin_mask_all)) < 60:
                     fin_mask_all = np.ones(len(y_method_df), dtype=bool)
-                X2_all = X_all_method_imp.iloc[np.where(fin_mask_all)[0]].reset_index(drop=True)
+                X2_all = X_all_method_imp.iloc[np.where(fin_mask_all)[0]][stage2_columns_all].reset_index(drop=True)
                 y2_all = (y_method_df.iloc[np.where(fin_mask_all)[0]]["finish_subtype"].values == "Submission").astype(int)
                 p_sub_all = max(1e-6, float(np.mean(y2_all))) if len(y2_all) > 0 else 0.5
                 w2_all = np.where(y2_all == 1, 0.5 / p_sub_all, 0.5 / max(1e-6, 1.0 - p_sub_all))
@@ -7770,6 +7785,8 @@ class UFCSuperModelPipeline:
                 })
 
                 method_bundle_all = {
+                    "stage1_cols": stage1_columns_all,
+                    "stage2_cols": stage2_columns_all,
                     "stage1": stage1_all,
                     "stage2": stage2_all,
                     "stage1_rf": stage1_rf_all,
@@ -7902,7 +7919,8 @@ class UFCSuperModelPipeline:
         self._stat("Walk-forward std (accuracy)", f"{np.std(acc_scores):.1%}")
 
     def predict_matchup(self, fighter_a, fighter_b, weight_class="", gender="", rounds=3,
-                        red_odds=None, blue_odds=None, location=None, event_elevation=None):
+                        red_odds=None, blue_odds=None, location=None, event_elevation=None,
+                        include_explanation=False, is_title=False, prediction_date=None):
         """Predict one matchup from live (current) fighter state.
 
         fighter_a is the red corner. Rebuilds the same feature row the model
@@ -7912,104 +7930,132 @@ class UFCSuperModelPipeline:
         probabilities, method distribution, and (when both moneylines are
         supplied) the odds-blended probability and betting-value metrics.
         Unknown fighters fall back to debut-prior features.
+
+        Set include_explanation=True for model votes, grouped probability
+        contributions, fighter comparisons, and coverage flags. is_title and
+        prediction_date provide explicit bout context without changing defaults.
         """
         if self.model is None:
             raise RuntimeError("Model is not trained.")
         a_key = fuzzy_find(fighter_a, self.fighter_history) or fighter_a
         b_key = fuzzy_find(fighter_b, self.fighter_history) or fighter_b
-        today = pd.Timestamp(datetime.now().date())
-
-        if a_key in self.fighter_history:
-            a_hist = self.fighter_history[a_key]
-            a_glicko = self.glicko_ratings.get(a_key, (MU_0, PHI_0, SIGMA_0))
-            a_opp = self.opp_glicko_list.get(a_key, [])
-            a_feats = compute_fighter_features(a_hist, a_glicko, a_opp, today)
-        else:
-            a_feats = compute_fighter_features([], (MU_0, PHI_0, SIGMA_0), [], today)
-
-        if b_key in self.fighter_history:
-            b_hist = self.fighter_history[b_key]
-            b_glicko = self.glicko_ratings.get(b_key, (MU_0, PHI_0, SIGMA_0))
-            b_opp = self.opp_glicko_list.get(b_key, [])
-            b_feats = compute_fighter_features(b_hist, b_glicko, b_opp, today)
-        else:
-            b_feats = compute_fighter_features([], (MU_0, PHI_0, SIGMA_0), [], today)
-
-        matchup = compute_matchup_features(
-            a_feats, b_feats, is_title=0, total_rounds=rounds, weight_class=weight_class
+        today = pd.Timestamp(
+            datetime.now().date() if prediction_date is None
+            else pd.Timestamp(prediction_date).date()
         )
-        a_elo = float(self.elo_ratings.get(a_key, ELO_BASE))
-        b_elo = float(self.elo_ratings.get(b_key, ELO_BASE))
-        d_elo = a_elo - b_elo
-        elo_p = 1.0 / (1.0 + 10.0 ** (-(d_elo / 400.0)))
-        division = _normalize_division(weight_class, gender)
-        a_div_elo = float(self.div_elo_ratings.get((a_key, division), ELO_BASE))
-        b_div_elo = float(self.div_elo_ratings.get((b_key, division), ELO_BASE))
-        d_div_elo = a_div_elo - b_div_elo
-        div_p = 1.0 / (1.0 + 10.0 ** (-(d_div_elo / 400.0)))
-        matchup.update({
-            "elo_r": a_elo,
-            "elo_b": b_elo,
-            "d_elo": d_elo,
-            "elo_win_prob": elo_p,
-            "d_elo_win_prob": elo_p - 0.5,
-            "abs_elo_gap": abs(d_elo),
-            "elo_sum": a_elo + b_elo,
-            "div_elo_r": a_div_elo,
-            "div_elo_b": b_div_elo,
-            "d_div_elo": d_div_elo,
-            "div_elo_win_prob": div_p,
-            "d_div_elo_win_prob": div_p - 0.5,
-            "abs_div_elo_gap": abs(d_div_elo),
-            "elo_divergence": elo_p - div_p,
-            "elo_agreement": 1.0 - abs(elo_p - div_p),
-        })
-        matchup.update(_div_rank_feature_row(
-            a_key, b_key, division, self.div_elo_ratings, self.last_fight_date, today,
-        ))
-        _a_slope = _elo_slope(self.elo_history.get(a_key, []), window=5)
-        _b_slope = _elo_slope(self.elo_history.get(b_key, []), window=5)
-        matchup["r_elo_slope_5"] = _a_slope
-        matchup["b_elo_slope_5"] = _b_slope
-        matchup["d_elo_slope_5"] = _a_slope - _b_slope
-        if PHASE_RATINGS_ENABLED:
-            _d = (MU_0, PHI_0, SIGMA_0)
-            matchup.update(_phase_glicko_features(
-                self.strike_off_ratings.get(a_key, _d), self.strike_off_ratings.get(b_key, _d),
-                self.strike_def_ratings.get(a_key, _d), self.strike_def_ratings.get(b_key, _d),
-                self.grapple_off_ratings.get(a_key, _d), self.grapple_off_ratings.get(b_key, _d),
-                self.grapple_def_ratings.get(a_key, _d), self.grapple_def_ratings.get(b_key, _d),
-            ))
-        if self.style_tracker is not None:
-            matchup.update(self.style_tracker.matchup_features(a_key, b_key))
-        # Altitude features: venue altitude (median fallback for blank/unknown
-        # location) + each fighter's latest known training-camp elevation (median
-        # fallback when the camp is unrecorded), for the acclimatization signals.
-        # Venue altitude: an explicit elevation (ft) wins — it works for venues the
-        # model has never seen (no silent median fallback); otherwise look the
-        # location up, then fall back to the dataset median.
-        if event_elevation is not None:
-            _event_alt = float(event_elevation)
-        elif location:
-            _event_alt = self.location_altitude.get(location, self.alt_median)
+        if prediction_date is not None:
+            for name in (a_key, b_key):
+                if any(pd.Timestamp(h["date"]) > today
+                       for h in self.fighter_history.get(name, [])):
+                    raise ValueError("Prediction date precedes available fighter history; use a historical model snapshot.")
+
+        if not hasattr(self, "_feature_version"):
+            raise RuntimeError("Model predates causal feature corrections; retrain before prediction.")
+        if getattr(self, "_temporal_state", None) is not None:
+            feature, a_feats, b_feats, _, _, _ = self._temporal_state.snapshot(
+                a_key, b_key, today, weight_class, gender, rounds, is_title,
+                location, event_elevation)
+            matchup_df = pd.DataFrame([feature])
         else:
-            _event_alt = self.alt_median
-        _rt = self.fighter_train_alt.get(a_key)
-        _bt = self.fighter_train_alt.get(b_key)
-        _known = 1.0 if (_rt is not None and _bt is not None) else 0.0
-        matchup.update(_altitude_feature_row(
-            _event_alt,
-            _rt if _rt is not None else self.train_alt_median,
-            _bt if _bt is not None else self.train_alt_median,
-            _known))
-        matchup_df = _augment_matchup_features(pd.DataFrame([matchup]))
+            if a_key in self.fighter_history:
+                a_hist = self.fighter_history[a_key]
+                a_glicko = self.glicko_ratings.get(a_key, (MU_0, PHI_0, SIGMA_0))
+                a_opp = self.opp_glicko_list.get(a_key, [])
+                a_feats = compute_fighter_features(a_hist, a_glicko, a_opp, today)
+            else:
+                a_feats = compute_fighter_features([], (MU_0, PHI_0, SIGMA_0), [], today)
+
+            if b_key in self.fighter_history:
+                b_hist = self.fighter_history[b_key]
+                b_glicko = self.glicko_ratings.get(b_key, (MU_0, PHI_0, SIGMA_0))
+                b_opp = self.opp_glicko_list.get(b_key, [])
+                b_feats = compute_fighter_features(b_hist, b_glicko, b_opp, today)
+            else:
+                b_feats = compute_fighter_features([], (MU_0, PHI_0, SIGMA_0), [], today)
+
+            matchup = compute_matchup_features(
+                a_feats, b_feats, is_title=int(bool(is_title)), total_rounds=rounds, weight_class=weight_class, gender=gender
+            )
+            a_elo = float(self.elo_ratings.get(a_key, ELO_BASE))
+            b_elo = float(self.elo_ratings.get(b_key, ELO_BASE))
+            d_elo = a_elo - b_elo
+            elo_p = 1.0 / (1.0 + 10.0 ** (-(d_elo / 400.0)))
+            division = _normalize_division(weight_class, gender)
+            a_div_elo = float(self.div_elo_ratings.get((a_key, division), ELO_BASE))
+            b_div_elo = float(self.div_elo_ratings.get((b_key, division), ELO_BASE))
+            d_div_elo = a_div_elo - b_div_elo
+            div_p = 1.0 / (1.0 + 10.0 ** (-(d_div_elo / 400.0)))
+            matchup.update({
+                "elo_r": a_elo,
+                "elo_b": b_elo,
+                "d_elo": d_elo,
+                "elo_win_prob": elo_p,
+                "d_elo_win_prob": elo_p - 0.5,
+                "abs_elo_gap": abs(d_elo),
+                "elo_sum": a_elo + b_elo,
+                "div_elo_r": a_div_elo,
+                "div_elo_b": b_div_elo,
+                "d_div_elo": d_div_elo,
+                "div_elo_win_prob": div_p,
+                "d_div_elo_win_prob": div_p - 0.5,
+                "abs_div_elo_gap": abs(d_div_elo),
+                "elo_divergence": elo_p - div_p,
+                "elo_agreement": 1.0 - abs(elo_p - div_p),
+            })
+            matchup.update(_div_rank_feature_row(
+                a_key, b_key, division, self.div_elo_ratings, self.last_fight_date, today,
+            ))
+            _a_slope = _elo_slope(self.elo_history.get(a_key, []), window=5)
+            _b_slope = _elo_slope(self.elo_history.get(b_key, []), window=5)
+            matchup["r_elo_slope_5"] = _a_slope
+            matchup["b_elo_slope_5"] = _b_slope
+            matchup["d_elo_slope_5"] = _a_slope - _b_slope
+            if PHASE_RATINGS_ENABLED:
+                _d = (MU_0, PHI_0, SIGMA_0)
+                matchup.update(_phase_glicko_features(
+                    self.strike_off_ratings.get(a_key, _d), self.strike_off_ratings.get(b_key, _d),
+                    self.strike_def_ratings.get(a_key, _d), self.strike_def_ratings.get(b_key, _d),
+                    self.grapple_off_ratings.get(a_key, _d), self.grapple_off_ratings.get(b_key, _d),
+                    self.grapple_def_ratings.get(a_key, _d), self.grapple_def_ratings.get(b_key, _d),
+                ))
+            if self.style_tracker is not None:
+                matchup.update(self.style_tracker.matchup_features(a_key, b_key))
+            # Altitude features: venue altitude (median fallback for blank/unknown
+            # location) + each fighter's latest known training-camp elevation (median
+            # fallback when the camp is unrecorded), for the acclimatization signals.
+            # Venue altitude: an explicit elevation (ft) wins — it works for venues the
+            # model has never seen (no silent median fallback); otherwise look the
+            # location up, then fall back to the dataset median.
+            if event_elevation is not None:
+                _event_alt = float(event_elevation)
+            elif location:
+                _event_alt = self.location_altitude.get(location, self.alt_median)
+            else:
+                _event_alt = self.alt_median
+            _rt = self.fighter_train_alt.get(a_key)
+            _bt = self.fighter_train_alt.get(b_key)
+            _known = 1.0 if (_rt is not None and _bt is not None) else 0.0
+            matchup.update(_altitude_feature_row(
+                _event_alt,
+                _rt if _rt is not None else self.train_alt_median,
+                _bt if _bt is not None else self.train_alt_median,
+                _known))
+            matchup_df = _augment_matchup_features(pd.DataFrame([matchup]))
         p_a_model = float(self.model.predict_proba_single(matchup_df.iloc[0].to_dict()))
         # Optional odds blend (inference only). market is None unless valid odds were
         # supplied for BOTH fighters; when None, p_a == p_a_model and every line below
         # is byte-for-byte the original model-only behavior.
         market = _devig_two_way(red_odds, blue_odds)
         market_a = market[0] if market is not None else None
-        p_a = _logit_blend(p_a_model, market_a, ODDS_BLEND_WEIGHT) if market is not None else p_a_model
+        blend_applied = market is not None
+        if hasattr(self.model, "market_blender"):
+            blender = self.model.market_blender
+            blend_applied = bool(market is not None and blender.is_fitted)
+            if blend_applied and today <= pd.Timestamp(blender.training_cutoff).normalize():
+                raise ValueError("Market calibration contains this prediction date or later outcomes.")
+            p_a = float(blender.predict(np.array([p_a_model]), np.array([market_a]))[0]) if blend_applied else p_a_model
+        else:
+            p_a = _logit_blend(p_a_model, market_a, ODDS_BLEND_WEIGHT) if market is not None else p_a_model
         # The pick — and therefore the winner-conditioned method below — follows the
         # blended probability, so a flip from the odds re-routes the method too.
         pick_a = p_a >= 0.5
@@ -8027,14 +8073,14 @@ class UFCSuperModelPipeline:
             p_a_model, a_key, b_key, red_odds, blue_odds
         )
 
-        return {
+        prediction = {
             "name_a": a_key,
             "name_b": b_key,
             "prob_a": p_a,
             "prob_b": 1.0 - p_a,
             "prob_a_model": p_a_model,
             "prob_b_model": 1.0 - p_a_model,
-            "odds_blended": market is not None,
+            "odds_blended": blend_applied,
             "red_odds": red_odds if market is not None else None,
             "blue_odds": blue_odds if market is not None else None,
             "market_prob_a": market_a,
@@ -8053,6 +8099,26 @@ class UFCSuperModelPipeline:
             "value_ev": value_ev,
             "value_stake": value_stake,
         }
+        if getattr(self.model, "conditional_methods", None) is not None:
+            from outcome_models import JOINT_LABELS
+            joint = self.model.conditional_methods.joint(matchup_df, np.array([p_a]))
+            prediction["joint_outcome_probs"] = dict(zip(JOINT_LABELS, map(float, joint[0])))
+            prediction["outcome_population"] = "Conditional on a decisive Decision/KO-TKO/Submission outcome; draw/NC/DQ not priced."
+            prediction["market_blending_status"] = "fitted" if self.model.market_blender.is_fitted else "unfitted; independent probability retained"
+            if getattr(self, "duration_model", None) is not None:
+                context = pd.DataFrame([{"total_rounds":rounds}])
+                duration = self.duration_model.predict(matchup_df, context, joint)
+                prediction["duration_forecast"] = duration[0]
+                prediction["statistical_props"] = self.count_models.predict(matchup_df, duration)[0]
+        if include_explanation:
+            from matchup_reports import build_matchup_report
+            prediction["explanation"] = build_matchup_report(
+                self, matchup_df, prediction, a_feats, b_feats,
+                prediction_date=today, rounds=rounds, is_title=bool(is_title),
+                location=location, event_elevation=event_elevation,
+                core=sys.modules[__name__],
+            )
+        return prediction
 
     def is_debutant(self, fighter_name):
         """True if the fighter has no recorded fight history (UFC debut)."""
@@ -8310,7 +8376,47 @@ def export_to_excel(path, predictions, rankings):
             if ci in pct_cols:
                 c.number_format = "0.0%"
     _auto_width(ws)
-    _ = rankings  # Intentionally unused: keep workbook to Predictions sheet only.
+    joint_predictions = [p for p in predictions if p.get("joint_outcome_probs")]
+    if joint_predictions:
+        from outcome_models import JOINT_LABELS
+        outcomes = wb.create_sheet("Outcomes and Props")
+        outcomes.append(["First fighter", "Second fighter", *JOINT_LABELS,
+            "Expected minutes", "Goes distance", "Over 2.5 rounds",
+            "First fighter TD", "Second fighter TD", "First fighter sig strikes", "Second fighter sig strikes"])
+        for p in joint_predictions:
+            duration, props = p.get("duration_forecast", {}), p.get("statistical_props", {})
+            outcomes.append([p["name_a"],p["name_b"],*[p["joint_outcome_probs"][k] for k in JOINT_LABELS],
+                duration.get("expected_seconds",0)/60, duration.get("goes_distance_probability"),
+                duration.get("over_rounds_probabilities",{}).get("2.5"),
+                *[props.get(k,{}).get("expected_count") for k in ("a_td","b_td","a_sig_str","b_sig_str")]])
+        for cell in outcomes[1]:
+            cell.fill,cell.font = hdr_fill,hdr_font
+        for row in outcomes.iter_rows(min_row=2):
+            for index,cell in enumerate(row,1):
+                cell.number_format = "0.0%" if index in set(range(3,9)) | {10,11} else "0.00" if index > 2 else "General"
+        _auto_width(outcomes)
+        outcomes.freeze_panes = "C2"
+    reports = [p for p in predictions if p.get("explanation")]
+    if reports:
+        from matchup_reports import report_summary
+        detail = wb.create_sheet("Explanations")
+        detail.append(["Matchup", "Prediction date", "Model probability (first fighter)",
+                       "Explanation and data coverage"])
+        for p in reports:
+            report = p["explanation"]
+            detail.append([f"{p['name_a']} vs. {p['name_b']}", report["prediction_date"],
+                           p["prob_a_model"], report_summary(report)])
+        for cell in detail[1]:
+            cell.fill, cell.font = hdr_fill, hdr_font
+        for row in detail.iter_rows(min_row=2):
+            for cell in row:
+                cell.alignment = Alignment(vertical="top", wrap_text=True)
+            row[2].number_format = "0.0%"
+            detail.row_dimensions[row[0].row].height = 240
+        for col, width in (("A", 45), ("B", 18), ("C", 24), ("D", 110)):
+            detail.column_dimensions[col].width = width
+        detail.freeze_panes = "A2"
+    _ = rankings
 
     wb.save(path)
 
@@ -8476,7 +8582,8 @@ class SuperModelGUI:
                     p = self.pipeline.predict_matchup(a, b, wc, g, rounds,
                                                       red_odds=red_odds, blue_odds=blue_odds,
                                                       location=location,
-                                                      event_elevation=event_elevation)
+                                                      event_elevation=event_elevation,
+                                                      include_explanation=True)
                     # User-facing picks should always align with displayed probability.
                     pick_a = p["prob_a"] >= 0.5
                     p["predicted_winner"] = p["name_a"] if pick_a else p["name_b"]
@@ -8530,6 +8637,7 @@ def main():
     """CLI entry point: train + report (with --train-only) or launch the GUI."""
     parser = argparse.ArgumentParser(description="Train and run UFC Model.")
     parser.add_argument("--train-only", action="store_true", help="Run training/evaluation only, no GUI.")
+    parser.add_argument("--legacy", action="store_true", help="Run the historical tuning workflow on corrected features.")
     _ = parser.parse_args()
 
     if not os.path.exists(DATA_PATH):
@@ -8537,7 +8645,7 @@ def main():
 
     pipeline = UFCSuperModelPipeline(DATA_PATH)
     if _.train_only:
-        pipeline.train()
+        pipeline.train(legacy=_.legacy)
         if pipeline.benchmarks:
             b = pipeline.benchmarks
             print("")
@@ -8556,15 +8664,15 @@ def main():
                 v3 = mm.get("method_acc_true_winner")
                 v4 = mm.get("method_majority_baseline_when_winner_correct")
                 v5 = mm.get("method_finish_score_winner_correct")
-                if v1 == v1:
+                if v1 is not None and np.isfinite(v1):
                     print(f"Method acc (predicted winner conditioned): {v1:.1%}")
-                if v2 == v2:
+                if v2 is not None and np.isfinite(v2):
                     print(f"Method acc | winner pick correct: {v2:.1%}")
-                if v4 == v4:
+                if v4 is not None and np.isfinite(v4):
                     print(f"Majority baseline | winner pick correct: {v4:.1%}")
-                if v5 == v5:
+                if v5 is not None and np.isfinite(v5):
                     print(f"FinishScore (winner pick correct): {v5:.1%}")
-                if v3 == v3:
+                if v3 is not None and np.isfinite(v3):
                     print(f"Method acc (true winner conditioned): {v3:.1%}")
         return
 

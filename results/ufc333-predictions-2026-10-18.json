@@ -1,0 +1,481 @@
+{
+  "event": "UFC 333",
+  "event_date": "2026-10-24",
+  "location": "Abu Dhabi, Abu Dhabi, United Arab Emirates",
+  "data_cutoff": "2026-10-17",
+  "source_data_sha256": "5f31251d8e27ef69ee1e5b2bfd4979307dbbafa204d336c4e67f76bd05869ffb",
+  "bouts": [
+    {
+      "weight_class": "Featherweight",
+      "fighters": [
+        "Alexander Volkanovski",
+        "Movsar Evloev"
+      ],
+      "rounds": 5,
+      "is_title": true,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Alexander Volkanovski",
+        "name_b": "Movsar Evloev",
+        "prob_a": 0.44368994421108054,
+        "prob_b": 0.5563100557889195,
+        "prob_a_model": 0.44368994421108054,
+        "prob_b_model": 0.5563100557889195,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1777.602958796557,
+        "rating_b": 1733.2984924387633,
+        "weight_class": "Featherweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.4644050986228502,
+          "KO/TKO": 0.2959895136147867,
+          "Submission": 0.23960538776236312
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.4644050986228502,
+        "ko_tko_pct": 0.2959895136147867,
+        "submission_pct": 0.23960538776236312,
+        "method_pct": 0.4644050986228502,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Bantamweight",
+      "fighters": [
+        "Petr Yan",
+        "Merab Dvalishvili"
+      ],
+      "rounds": 5,
+      "is_title": true,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Petr Yan",
+        "name_b": "Merab Dvalishvili",
+        "prob_a": 0.4021522393125602,
+        "prob_b": 0.5978477606874397,
+        "prob_a_model": 0.4021522393125602,
+        "prob_b_model": 0.5978477606874397,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1752.9975082324418,
+        "rating_b": 1765.6765764866548,
+        "weight_class": "Bantamweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.5108662435307573,
+          "KO/TKO": 0.22238326692847418,
+          "Submission": 0.26675048954076847
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.5108662435307573,
+        "ko_tko_pct": 0.22238326692847418,
+        "submission_pct": 0.26675048954076847,
+        "method_pct": 0.5108662435307573,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Flyweight",
+      "fighters": [
+        "Lone'er Kavanagh",
+        "Ramazan Temirov"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Lone'er Kavanagh",
+        "name_b": "Ramazan Temirov",
+        "prob_a": 0.4312647726763437,
+        "prob_b": 0.5687352273236563,
+        "prob_a_model": 0.4312647726763437,
+        "prob_b_model": 0.5687352273236563,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1571.4899814292214,
+        "rating_b": 1659.8005702153964,
+        "weight_class": "Flyweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.3385105347052439,
+          "KO/TKO": 0.42321471906425745,
+          "Submission": 0.23827474623049857
+        },
+        "predicted_method": "KO/TKO",
+        "decision_pct": 0.3385105347052439,
+        "ko_tko_pct": 0.42321471906425745,
+        "submission_pct": 0.23827474623049857,
+        "method_pct": 0.42321471906425745,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Heavyweight",
+      "fighters": [
+        "Alexander Volkov",
+        "Rizvan Kuniev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Alexander Volkov",
+        "name_b": "Rizvan Kuniev",
+        "prob_a": 0.5557683604088346,
+        "prob_b": 0.4442316395911654,
+        "prob_a_model": 0.5557683604088346,
+        "prob_b_model": 0.4442316395911654,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1757.4932254192818,
+        "rating_b": 1690.160724518401,
+        "weight_class": "Heavyweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.4485571782793232,
+          "KO/TKO": 0.34869331563813893,
+          "Submission": 0.20274950608253806
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.4485571782793232,
+        "ko_tko_pct": 0.34869331563813893,
+        "submission_pct": 0.20274950608253806,
+        "method_pct": 0.4485571782793232,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Featherweight",
+      "fighters": [
+        "Aaron Pico",
+        "Losene Keita"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Aaron Pico",
+        "name_b": "Losene Keita",
+        "prob_a": 0.5266868142474906,
+        "prob_b": 0.47331318575250936,
+        "prob_a_model": 0.5266868142474906,
+        "prob_b_model": 0.47331318575250936,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1525.3528797904187,
+        "rating_b": 1585.0211714330092,
+        "weight_class": "Featherweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.3931683210021828,
+          "KO/TKO": 0.2833590931570791,
+          "Submission": 0.32347258584073807
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.3931683210021828,
+        "ko_tko_pct": 0.2833590931570791,
+        "submission_pct": 0.32347258584073807,
+        "method_pct": 0.3931683210021828,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Light Heavyweight",
+      "fighters": [
+        "Azamat Murzakanov",
+        "Dominick Reyes"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Azamat Murzakanov",
+        "name_b": "Dominick Reyes",
+        "prob_a": 0.3402766946639756,
+        "prob_b": 0.6597233053360244,
+        "prob_a_model": 0.3402766946639756,
+        "prob_b_model": 0.6597233053360244,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1729.0716006914377,
+        "rating_b": 1686.332214474482,
+        "weight_class": "Light Heavyweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.3128529578288119,
+          "KO/TKO": 0.4668779629099133,
+          "Submission": 0.22026907926127484
+        },
+        "predicted_method": "KO/TKO",
+        "decision_pct": 0.3128529578288119,
+        "ko_tko_pct": 0.4668779629099133,
+        "submission_pct": 0.22026907926127484,
+        "method_pct": 0.4668779629099133,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Light Heavyweight",
+      "fighters": [
+        "Nikita Krylov",
+        "Abdul Rakhman Yakhyaev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Nikita Krylov",
+        "name_b": "Abdul Rakhman Yakhyaev",
+        "prob_a": 0.20630012577326406,
+        "prob_b": 0.7936998742267359,
+        "prob_a_model": 0.20630012577326406,
+        "prob_b_model": 0.7936998742267359,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1634.9405208286719,
+        "rating_b": 1681.6188948524907,
+        "weight_class": "Light Heavyweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.24868530918547313,
+          "KO/TKO": 0.33150173202676103,
+          "Submission": 0.41981295878776587
+        },
+        "predicted_method": "Submission",
+        "decision_pct": 0.24868530918547313,
+        "ko_tko_pct": 0.33150173202676103,
+        "submission_pct": 0.41981295878776587,
+        "method_pct": 0.41981295878776587,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Middleweight",
+      "fighters": [
+        "Abus Magomedov",
+        "Cam Rowston"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Abus Magomedov",
+        "name_b": "Cam Rowston",
+        "prob_a": 0.4291785824806476,
+        "prob_b": 0.5708214175193524,
+        "prob_a_model": 0.4291785824806476,
+        "prob_b_model": 0.5708214175193524,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1639.3529651522929,
+        "rating_b": 1647.606751643559,
+        "weight_class": "Middleweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.32228405548145117,
+          "KO/TKO": 0.44435290812013445,
+          "Submission": 0.23336303639841444
+        },
+        "predicted_method": "KO/TKO",
+        "decision_pct": 0.32228405548145117,
+        "ko_tko_pct": 0.44435290812013445,
+        "submission_pct": 0.23336303639841444,
+        "method_pct": 0.44435290812013445,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Lightweight",
+      "fighters": [
+        "Grant Dawson",
+        "Nurullo Aliev"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Grant Dawson",
+        "name_b": "Nurullo Aliev",
+        "prob_a": 0.5372383561129511,
+        "prob_b": 0.4627616438870489,
+        "prob_a_model": 0.5372383561129511,
+        "prob_b_model": 0.4627616438870489,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1706.831064091893,
+        "rating_b": 1663.4945954716927,
+        "weight_class": "Lightweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.38169842825540995,
+          "KO/TKO": 0.23551300877898598,
+          "Submission": 0.3827885629656041
+        },
+        "predicted_method": "Submission",
+        "decision_pct": 0.38169842825540995,
+        "ko_tko_pct": 0.23551300877898598,
+        "submission_pct": 0.3827885629656041,
+        "method_pct": 0.3827885629656041,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Middleweight",
+      "fighters": [
+        "Abubakar Vagaev",
+        "Jacob Malkoun"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "missing_history": [],
+      "prediction": {
+        "name_a": "Abubakar Vagaev",
+        "name_b": "Jacob Malkoun",
+        "prob_a": 0.26186072658971093,
+        "prob_b": 0.7381392734102891,
+        "prob_a_model": 0.26186072658971093,
+        "prob_b_model": 0.7381392734102891,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1545.4598351865607,
+        "rating_b": 1602.64651626611,
+        "weight_class": "Middleweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.3892197825377404,
+          "KO/TKO": 0.2558555063973234,
+          "Submission": 0.3549247110649362
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.3892197825377404,
+        "ko_tko_pct": 0.2558555063973234,
+        "submission_pct": 0.3549247110649362,
+        "method_pct": 0.3892197825377404,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted"
+    },
+    {
+      "weight_class": "Bantamweight",
+      "fighters": [
+        "Colby Thicknesse",
+        "Asaf Chopurov"
+      ],
+      "rounds": 3,
+      "is_title": false,
+      "gender": "Men",
+      "allow_debutant_prior": true,
+      "missing_history": [
+        "Asaf Chopurov"
+      ],
+      "prediction": {
+        "name_a": "Colby Thicknesse",
+        "name_b": "Asaf Chopurov",
+        "prob_a": 0.5824596067105613,
+        "prob_b": 0.4175403932894387,
+        "prob_a_model": 0.5824596067105613,
+        "prob_b_model": 0.4175403932894387,
+        "odds_blended": false,
+        "red_odds": null,
+        "blue_odds": null,
+        "market_prob_a": null,
+        "market_prob_b": null,
+        "rating_a": 1514.5946979958744,
+        "rating_b": 1500.0,
+        "weight_class": "Bantamweight",
+        "gender": "Men",
+        "method_probs": {
+          "Decision": 0.40195383608716967,
+          "KO/TKO": 0.27845810174112834,
+          "Submission": 0.31958806217170205
+        },
+        "predicted_method": "Decision",
+        "decision_pct": 0.40195383608716967,
+        "ko_tko_pct": 0.27845810174112834,
+        "submission_pct": 0.31958806217170205,
+        "method_pct": 0.40195383608716967,
+        "value_side": null,
+        "value_ev": null,
+        "value_stake": null
+      },
+      "status": "Predicted using generic debutant priors"
+    }
+  ],
+  "generated_on": "2026-10-18",
+  "dataset_sha256": "79cbca8c3f429f108f25360b30e664fce125d79cd76b4856b157a29d06d29bf1",
+  "model_source_sha256": "51ccef9b820e3e1ae2aace6beab01600b4cba0e499fa6c1d1ed4afbd630e82b5",
+  "source_data_sha256_description": "SHA-256 of UFC_ML_Model.py bytes followed by dataset bytes",
+  "ufc_environment": {},
+  "card_path": "results/ufc333-card.json",
+  "method_probability_interpretation": "Method probabilities are conditional on the predicted winner."
+}

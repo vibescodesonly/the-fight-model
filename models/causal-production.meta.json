@@ -1,0 +1,22 @@
+{
+  "format": "causal-research-v1",
+  "model_id": "6dd4460dfa7d627b837ef37a",
+  "source_sha256": "0d700156e0f335a9e6d7e2095c88612ca7bffab49c9aa457c9dd032e4370d3eb",
+  "dataset_sha256": "79cbca8c3f429f108f25360b30e664fce125d79cd76b4856b157a29d06d29bf1",
+  "source_data_sha256": "ed703857efb162ad3f3b949d748aba70c23ec005d785ecadabcc30070171b41f",
+  "history_cutoff": "2026-10-17",
+  "last_supervised_date": "2026-10-17",
+  "training_cutoff": "2026-10-17",
+  "ufc_environment": {},
+  "packages": {
+    "numpy": "2.3.2",
+    "pandas": "2.3.2",
+    "scikit-learn": "1.7.1",
+    "scipy": "1.16.1",
+    "lightgbm": "4.6.0",
+    "xgboost": "3.0.5",
+    "catboost": "1.2.8",
+    "cloudpickle": "3.1.2"
+  },
+  "model_sha256": "4f7a7311281f4e7be50ecffe6f593971704c759e48bb0d3d40550e24aa223fce"
+}
